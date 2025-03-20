@@ -11,7 +11,6 @@
         .instructions { color: #aaa; margin: 10px; }
         button, input[type="file"] { margin: 10px; padding: 10px 20px; background-color: #ff4500; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
         button:hover, input[type="file"]:hover { background-color: #ff6a00; }
-        /* Slider Styles */
         .slider-container { margin: 10px; }
         input[type="range"] { 
             -webkit-appearance: none; 
@@ -58,9 +57,8 @@
     <button onclick="uploadToDropbox()">Upload to Dropbox</button>
     <div id="uploadStatus" class="instructions">Ready...</div>
 
-    <script src="https://unpkg.com/dropbox@10.34.0/dist/Dropbox-sdk.min.js" onerror="console.error('Dropbox SDK failed to load from unpkg');"></script>
+    <!-- Signature Pad Script -->
     <script>
-        // Signature Pad Setup
         const canvas = document.getElementById('signatureCanvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
@@ -68,12 +66,98 @@
         let lastY = 0;
 
         ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2; // Initial thickness
+        ctx.lineWidth = 2;
         ctx.lineCap = 'round';
 
-        // Slider Setup
         const lineWidthSlider = document.getElementById('lineWidthSlider');
         const lineWidthValue = document.getElementById('lineWidthValue');
+        lineWidthSlider.addEventListener('input', () => {
+            ctx.lineWidth = lineWidthSlider.value;
+            lineWidthValue.textContent = lineWidthSlider.value;
+        });
 
-        // Update line width and display value when slider changes
-        lineWidthSlider
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.type.includes('touch') ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.type.includes('touch') ? e.touches[0].clientY : e.clientY) - rect.top;
+            [lastX, lastY] = [x, y];
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.type.includes('touch') ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.type.includes('touch') ? e.touches[0].clientY : e.clientY) - rect.top;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            [lastX, lastY] = [x, y];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveSignature() {
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'signature.png';
+            link.href = dataURL;
+            link.click();
+        }
+    </script>
+
+    <!-- Dropbox SDK and Upload Script -->
+    <script src="https://unpkg.com/dropbox@10.34.0/dist/Dropbox-sdk.min.js" onerror="console.error('Dropbox SDK failed to load');"></script>
+    <script>
+        const DROPBOX_ACCESS_TOKEN = 'sl.u.AFl_hLa6e87ciNbkYJ6swlN6bweS1cAUQCAm4-u0T0N5TT8fhhcq3GhjZpr99yjcAcHh17fshyIQSp5t_yocd00qYuQtqQOiqwxZ19JHF8Mr15QT0bG8H3qRzOk1JPGW3JkWEumO6Ea-CSGJoF06lC0YnwnySYDbgLIbzUpX_l67itozSbiiXne9qdBw6FkEdList2-n8eSy1U_DyMm_ymj-__8yVFPoU1fuOKg2j-I_rGKszKhXhP3OdVfQw2xRjdVhVselGjtX5ZD2Sr9zj4VO5-CNqdD9VQUCo0o7kg7qGBpngFrcwdvWOejwiTCfcyt6xC_DbmKkAmuprGjsF7jCtLfzBL6pvCJ9YgVssTBS4W_NF9CD7IC8JLk5JRQ0aMWLGSLjjkKwluFNHQ0EFmtrECKIvOmYyVZi-_zqMR7P7n_W9E_u6OMM0IHuIwYpu7bMAIbQ9tZmvU29iBAMZFFF18Vxpo7gjGZu2-CU6GL9MlIgMHtJz9tloTWyQudpZ1qeRctiD4yiIyePJ3BSGfphCy_Af8v162MKBntPRb0as-kUrwQa2tlvALkSToQMmBoYXR6AtdmynkS0uYIenMr0ol3x6gPAvBJkgSOVAhUtoK6CJdEhNHcaHjeXLeV9k-0EMYyY8of4MorUZuMTjp1-lsN0-W4L2oeN1ioG03WKuIOlwLQItQ6mbBZ9vY8XPsrPTElOgrlUL4L48QW4KweaE7LaBMS_pzinrR3iWqxld3n2Gq-WK12wR7oIFf3QTRcUI0hGxGYg7SEcnBLOjJ7QlVk8tu9MD4Ew1hggf8Tvh4unGmAzXZLNJtVZToQAXtOgqY3s4bC5aYLsSH-5OszHzo4T-gGFfTTbvf-akeD_Xq6l82ZRN_Iclt45iADnanmjW-0a4ojq0wipx68CXSqEb38l7-8S5ccPu01Izi23syL52uAB9Nxmzz1nCHDVTMQ2JnVMoZnACyOai9fi4CWGGtcLFJb5IzSAScJhS0sWR0TFEQ7EfViVlz2f6_mUwnpbvSw2xkby7lzK0kS6dBKm4riPGcvLxlqOhFIn_FP-Po5TtBVbf0y5g7z7ZiwhtInjMB5aHG1sXL1VVgXxXrNrCm5Bzlx3Jyau-QQKpouQ0qJne0oNquWfL1X_UQK5eF_-E2qrtMKWj0Eb99aZFUqBETsiRnei6aoGcWxSCg64sseJTeyFlhV4S7sOAympc7zpyBeYfAKZuvqFkbJ0Ds0ht9qzGmqvCrbAmiTLbQdbAg4HKvO6-014CK-5hCrDZBtcsygROydT6WiyGwEF5fBAL7WnzGKAOpRRweALz9RwkFLJ6nCAcCkbxCyeOLc4xKY';
+        const DROPBOX_FOLDER = '';
+        const status = document.getElementById('uploadStatus');
+        const dbx = new Dropbox.Dropbox({ accessToken: DROPBOX_ACCESS_TOKEN });
+
+        function uploadToDropbox() {
+            const fileInput = document.getElementById('imageUpload');
+            const file = fileInput.files[0];
+            if (!file) {
+                status.textContent = 'Please select a file.';
+                return;
+            }
+            if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) {
+                status.textContent = 'Please upload an image (max 5MB).';
+                return;
+            }
+            status.textContent = 'Uploading ' + file.name + '...';
+            dbx.filesUpload({
+                path: DROPBOX_FOLDER + '/' + file.name,
+                contents: file,
+                mode: 'add'
+            })
+            .then(response => {
+                console.log('Upload response:', response);
+                status.textContent = 'Uploaded successfully!';
+                fileInput.value = '';
+            })
+            .catch(error => {
+                console.error('Upload error details:', error);
+                status.textContent = 'Upload failed: ' + (error.error ? JSON.stringify(error.error) : error.message);
+            });
+        }
+    </script>
+</body>
+</html>
