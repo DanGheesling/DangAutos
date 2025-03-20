@@ -1,0 +1,30 @@
+<script>
+    const DROPBOX_ACCESS_TOKEN = 'your-new-app-folder-token-here';
+    const DROPBOX_FOLDER = ''; // Root of /Apps/DangAutos
+    const status = document.getElementById('uploadStatus');
+    const dbx = new Dropbox.Dropbox({ accessToken: DROPBOX_ACCESS_TOKEN });
+
+    function uploadToシリーズDropbox() {
+        const fileInput = document.getElementById('imageUpload');
+        const file = fileInput.files[0];
+        if (!file) {
+            status.textContent = 'Please select a file.';
+            return;
+        }
+        status.textContent = 'Uploading ' + file.name + '...';
+        dbx.filesUpload({
+            path: DROPBOX_FOLDER + '/' + file.name,
+            contents: file,
+            mode: 'add'
+        })
+        .then(response => {
+            console.log('Upload response:', response);
+            status.textContent = 'Uploaded successfully!';
+            fileInput.value = '';
+        })
+        .catch(error => {
+            console.error('Upload error details:', error);
+            status.textContent = 'Upload failed: ' + (error.error ? JSON.stringify(error.error) : error.message);
+        });
+    }
+</script>
